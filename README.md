@@ -1,83 +1,96 @@
 ⚽ FIFA Tournament Management System
-A full-stack platform for organizing FIFA tournaments with bracket prediction and fantasy football mini-games.
+A comprehensive, full-stack platform for organizing FIFA tournaments with automated bracket generation, a bracket prediction game, and a live fantasy football league. Built with the MERN-ish stack (Node.js, Express, React, PostgreSQL) featuring real-time updates via WebSockets.
 
-✨ Features
-🔐 JWT auth with RBAC (Admin / Organizer / Player) + refresh tokens
-🏆 Tournament CRUD with 3 formats (knockout, round-robin, hybrid)
-🌳 Auto-generated seeded brackets with visualization
-🔮 Bracket prediction game with weighted scoring + leaderboard
-🎯 Fantasy football with weekly scoring & standings
-⚡ Real-time updates via Socket.io (scores, chat, notifications)
-💬 Match comments / trash talk system
-🔗 Integrations: Zafronix, SportScore, SoFIFA, football-data.org
-📊 Player stats & leaderboards
-🧰 Extras: Swagger docs, Redis caching, rate limiting, Winston logging, Jest tests, Docker
+✨ Key Features
+JWT Authentication & RBAC: Secure login with refresh tokens and Role-Based Access Control (admin, organizer, player).
+Tournament Management: Create and manage Knockout, Round-Robin, and Hybrid tournaments.
+Automated Bracket Generation: Standard seeding algorithm (1v16, 2v15) with automatic winner progression and bye-handling.
+Bracket Guessing Game: Users predict knockout outcomes. Earn points with round-by-round weighting (R16=1pt, QF=2pts, SF=4pts, Final=8pts) + upset bonuses.
+Fantasy Football Game: Draft real players, earn points based on live performances (goals, assists, clean sheets), and compete on weekly leaderboards.
+Real-Time Updates: Live score updates, auto-updating brackets, and a match chat/trash-talk system via Socket.io.
+External API Integrations: Caching and rate-limit handling for Zafronix (Historical Data), SportScore (Live Scores), SoFIFA (Player Ratings), and football-data.org.
+Production-Ready: Redis caching, Winston logging, Swagger API docs, rate limiting, and Jest tests.
 🛠 Tech Stack
-Backend: Node.js, Express, PostgreSQL, Redis, Socket.io, JWT, Joi, Winston, HelmetFrontend: React 18, Vite, Zustand, React Router, Socket.io-client, AxiosInfra: Docker Compose, GitHub Actions (optional CI)
+Backend: Node.js, Express, PostgreSQL, Redis, Socket.io, JWT, Joi, Winston, Helmet, JestFrontend: React 18, Vite, Zustand, React Router, Socket.io-client, AxiosInfrastructure: Docker, Docker Compose
 
-🚀 Quick Start
-Prerequisites
-Node 18+, PostgreSQL 16, Redis 7 (or just Docker)
-1. Clone & install
-git clone https://github.com/yourname/fifa-tournament-systemcd fifa-tournament-system
-2. Spin up infra with Docker
-docker compose up -d db redis
-3. Backend
-cd backendcp .env.example .env   # edit secretsnpm installnpm run migrate        # runs schema.sqlnpm run dev            # http://localhost:5000
-4. Frontend
-cd frontendnpm installnpm run dev            # http://localhost:5173
-🔑 Environment Variables
-See backend/.env.example. Critical ones:
-
-JWT_SECRET, JWT_REFRESH_SECRET — strong random strings
-DB_* — Postgres credentials
-REDIS_URL — Redis connection string
-FOOTBALL_DATA_API_KEY — from https://www.football-data.org/
 📂 Project Structure
-See tree in repo root — strict MVC: routes → controllers → models/services.
+fifa-tournament-system/├── backend/│   ├── src/│   │   ├── config/            # DB, Env, and Logger setup│   │   ├── controllers/       # Business logic (auth, tournaments, matches, etc.)│   │   ├── middleware/        # Auth, RBAC, Error handling, Rate limiting, Validation│   │   ├── models/            # PostgreSQL queries (query-first pattern)│   │   ├── routes/            # Express route definitions│   │   ├── services/          # Bracket logic, Scoring, APIs, Cron jobs, Emails│   │   ├── sockets/           # Socket.io server setup│   │   ├── utils/             # JWT helpers, API response formatter│   │   ├── db/                # SQL schema│   │   ├── app.js             # Express app config│   │   └── server.js          # HTTP & Socket server entry point│   ├── logs/│   ├── tests/│   ├── .env.example│   └── package.json├── frontend/│   ├── src/│   │   ├── components/        # Reusable UI (Bracket, MatchCard, Navbar, Leaderboard)│   │   ├── pages/             # Route screens (Login, Dashboard, Tournaments, Fantasy)│   │   ├── services/          # Axios instance & Socket client│   │   ├── hooks/             # Custom React hooks (useAuth, useTournament)│   │   ├── utils/             # Helper functions│   │   ├── App.jsx            # Main routing setup│   │   └── main.jsx           # React DOM root│   ├── public/                # Static assets (favicon)│   ├── package.json│   └── vite.config.js         # Vite & Proxy config├── docker-compose.yml└── README.md
+🚀 Getting Started
+Prerequisites
+Node.js v18+
+PostgreSQL v14+
+Redis v6+ (Optional, falls back to in-memory cache if missing)
+Or just use Docker
+1. Environment Setup
+Copy the example environment files and fill in your credentials:
+
+cd backendcp .env.example .env# Edit .env with your DB credentials, JWT secrets, and API keyscd ../frontendcp .env.example .env# Edit .env if your backend runs on a port other than 5000
+2. Database Setup
+Create a PostgreSQL database named fifa_tournament and run the schema script:
+
+# Using psqlcreatedb fifa_tournamentpsql -d fifa_tournament -f backend/src/db/schema.sql
+3. Installation & Running (Manual)
+Backend:
+
+cd backendnpm installnpm run dev   # Starts on http://localhost:5000
+Frontend:
+
+cd frontendnpm installnpm run dev   # Starts on http://localhost:5173
+4. Using Docker (Recommended)
+Spin up the database, Redis, backend, and frontend in one command:
+
+docker-compose up --build
+(Note: Ensure your backend/.env points to db and redis as hostnames if using Docker).
 
 🗄 Database Schema
-Full DDL lives at backend/src/db/schema.sql. Run via npm run migrate.
+The schema uses a normalized 3NF relational design. The core relationships are:
 
-ER overview:
+users join tournaments via tournament_participants.
+matches are self-referencing via next_match_id to form a bracket tree.
+predictions and fantasy_teams link users to their respective game data.
+The complete DDL is available at backend/src/db/schema.sql.
 
-users ──< tournament_participants >── tournamentsusers ──< predictions >── tournamentstournaments ──< matches ──< match_statsusers ──< fantasy_teams ──< fantasy_team_players >── fantasy_playersfantasy_players ──< fantasy_scoringmatches ──< match_comments
-📡 API Documentation
-Swagger UI available at http://localhost:5000/api/docs once backend is running.
+📡 API Endpoints
+All endpoints are prefixed with /api. Authentication requires sending a Authorization: Bearer <token> header.
 
-Key Endpoints
-Method	Path	Description	Auth
-POST	/api/auth/register	Create account	Public
-POST	/api/auth/login	Get tokens	Public
+Method	Endpoint	Description	Access
+POST	/api/auth/register	Register a new user	Public
+POST	/api/auth/login	Login & get JWT tokens	Public
 POST	/api/auth/refresh	Refresh access token	Public
-GET	/api/tournaments	List tournaments	Public
-POST	/api/tournaments	Create tournament	Org/Admin
-POST	/api/tournaments/:id/bracket	Generate bracket	Org/Admin
-GET	/api/tournaments/:id/matches	List matches	Public
-POST	/api/matches/:id/score	Report score	Org/Admin
-POST	/api/predictions	Submit prediction	Player
-GET	/api/predictions/mine/:tournamentId	My predictions only	Player
-GET	/api/predictions/:tournamentId/leaderboard	Global leaderboard	Public
+GET	/api/tournaments	List all tournaments	Public
+POST	/api/tournaments	Create a tournament	Org/Admin
+POST	/api/tournaments/:id/bracket	Generate tournament bracket	Org/Admin
+GET	/api/tournaments/:id/matches	View tournament bracket/matches	Public
+POST	/api/matches/:id/score	Report match score	Org/Admin
+POST	/api/predictions	Submit a bracket prediction	Player
+GET	/api/predictions/:id/leaderboard	View prediction leaderboard	Public
 POST	/api/fantasy/team	Create fantasy team	Player
-POST	/api/fantasy/:tournamentId/players	Add player to roster	Player
-GET	/api/fantasy/:tournamentId/standings	Fantasy standings	Public
+POST	/api/fantasy/:id/players	Draft player to fantasy team	Player
 GET	/api/matches/:id/comments	Get match chat	Public
-POST	/api/matches/:id/comments	Post comment	Player
-🎯 Beyond Course Scope
-✅ Redis caching with graceful in-memory fallback
-✅ Swagger/OpenAPI documentation
-✅ Jest unit tests for bracket algorithm
-✅ Docker Compose for one-command setup
-✅ Winston structured logging with file rotation
-✅ Email service stub (Nodemailer)
-✅ Multer for avatar uploads
-✅ Graceful shutdown & rate limiting
-📦 Deployment
-Render
-Create Postgres + Redis add-ons
-Create web service from backend/, build command npm install, start npm start
-Create static site from frontend/, build npm run build, publish dist/
-Heroku
-heroku create fifa-tournament-apiheroku addons:create heroku-postgresql:hobby-devheroku addons:create heroku-redis:hobby-devgit push heroku main
+POST	/api/matches/:id/comments	Post match comment/trash talk	Player
+(Full Swagger UI documentation is available at /api/docs when running the backend in development mode).
+
+⚡ Real-Time Events (Socket.io)
+The frontend connects to the backend via Socket.io. Key events include:
+
+match:completed: Broadcasts final score and winner.
+bracket:update: Triggers frontend refetch of the bracket tree.
+comment:new: Pushes new chat messages to all users viewing the match.
+fantasy:update: Pushes live point updates to fantasy team owners.
+🔗 External API Integrations
+This system safely integrates with free APIs by caching responses in Redis and enforcing rate limits:
+
+Zafronix World Cup API: Historical data for bracket guessing (1k req/day limit).
+SportScore API: Live match stats for fantasy football auto-scoring.
+SoFIFA API: Player attributes and ratings for fantasy drafting.
+football-data.org: Major league fixtures and data.
 🧪 Testing
-cd backend && npm test
+Backend tests are written with Jest.
+
+cd backendnpm test
+🏗 Deployment
+The application is containerized and ready for deployment on Render, Heroku, or AWS.
+
+Frontend: Build static assets (npm run build) and serve via Nginx/Netlify/Vercel.
+Backend: Deploy as a Node web service. Ensure Postgres and Redis add-ons are attached.
+Ensure environment variables (NODE_ENV=production, DB URLs, etc.) are set in your hosting provider's dashboard.
